@@ -41,6 +41,7 @@ async def main():
         await bot.load_extension("cogs.jokes")
         await bot.load_extension("cogs.lore")
         await bot.load_extension("cogs.messaggi_divertenti")
+        await bot.load_extension("cogs.coin")
 
         print("Tutti i cog caricati!")
 
