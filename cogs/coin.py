@@ -1,14 +1,24 @@
-@bot.command()
-async def coin(ctx):
-    msg = await ctx.send("🪙 Lancio la moneta...")
-    await asyncio.sleep(1.5)
+import random
+from discord.ext import commands
+import discord
 
-    risultato = random.choice(["Testa", "Croce"])
 
-    embed = discord.Embed(
-        title="🪙 Lancio completato",
-        description=f"È uscito: **{risultato}**",
-        color=discord.Color.gold()
-    )
+class Coin(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
 
-    await msg.edit(content=None, embed=embed)
+    @commands.command()
+    async def coin(self, ctx):
+        risultato = random.choice(["Testa", "Croce"])
+
+        embed = discord.Embed(
+            title="🪙 Lancio della moneta",
+            description=f"Risultato: **{risultato}**",
+            color=discord.Color.gold()
+        )
+
+        await ctx.send(embed=embed)
+
+
+async def setup(bot):
+    await bot.add_cog(Coin(bot))
