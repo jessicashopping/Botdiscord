@@ -1,0 +1,14 @@
+{
+    "wizard": {
+        "name": "Wizard",
+        "hit_die": "d6",
+        "primary_ability": "Intelligence",
+        "description": "A scholarly magic-user capable of manipulating reality."
+    },
+    "fighter": {
+        "name": "Fighter",
+        "hit_die": "d10",
+        "primary_ability": "Strength or Dexterity",
+        "description": "A master of martial combat."
+    }
+}

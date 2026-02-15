@@ -1,0 +1,1 @@
+print("Compendium caricato correttamente!")
