@@ -10,6 +10,7 @@ load_dotenv()
 # ── Intents ──────────────────────────────────────────────
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True  # Necessario per welcome/goodbye
 
 # ── Help personalizzato ──────────────────────────────────
 class GrimoryHelp(commands.HelpCommand):
@@ -73,6 +74,8 @@ EXTENSIONS = [
     "cogs.coin",
     "cogs.taverna",
     "cogs.encounter",
+    "cogs.welcome",
+    "cogs.config",
 ]
 
 

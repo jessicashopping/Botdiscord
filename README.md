@@ -56,7 +56,21 @@ Bot Discord per server medievali a tema D&D 5e.
 
 ### 💬 Risposte automatiche
 - **Parolacce** → risposte divertenti a tema D&D
-- **Saluti** → risposta amichevole (20% probabilità)
+- **Saluti** → risposta amichevole (probabilità configurabile)
+
+### ⚙️ Configurazione (`cogs/config.py`) — NUOVO
+| Comando | Descrizione |
+|---------|-------------|
+| `!config` | Apre il **pannello di configurazione** interattivo (solo admin) |
+
+Il pannello ha bottoni, menu a tendina e modal per configurare:
+- **Benvenuto**: attiva/disattiva, scegli canale, modifica messaggio, formato embed/testo, testa il messaggio
+- **Addio**: attiva/disattiva, scegli canale, modifica messaggio
+- **Risposte divertenti**: attiva/disattiva, probabilità saluti (0-100%)
+- **Auto-ruolo**: assegna automaticamente un ruolo ai nuovi membri
+- **Reset**: ripristina tutto ai valori predefiniti
+
+> ⚠️ **Importante**: su Discord vai in Impostazioni Server → App → Bot → attiva l'intent **"Server Members"** per il sistema di benvenuto.
 
 ## Hosting
 Hostato su **Railway**. Assicurati di avere la variabile d'ambiente `TOKEN` configurata.
