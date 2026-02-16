@@ -62,11 +62,14 @@ class ConfigMainView(ui.View):
             ),
             inline=True,
         )
+        staff_display = f"<@&{config['staff_role_id']}>" if config.get("staff_role_id") else "Solo Admin"
+
         embed.add_field(
             name="🎭 Altro",
             value=(
                 f"**Risposte divertenti:** {fun_status} ({config['fun_replies_chance']}%)\n"
-                f"**Auto-ruolo:** {auto_role}"
+                f"**Auto-ruolo:** {auto_role}\n"
+                f"**Ruolo Staff:** {staff_display}"
             ),
             inline=True,
         )
@@ -415,14 +418,32 @@ class AutoRoleSelect(ui.RoleSelect):
         await interaction.response.edit_message(embed=embed, view=self.view)
 
 
+class StaffRoleSelect(ui.RoleSelect):
+    def __init__(self):
+        super().__init__(
+            placeholder="Seleziona il ruolo Staff (può usare !config)…",
+            min_values=0,
+            max_values=1,
+            row=2,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        role_id = self.values[0].id if self.values else None
+        config_manager.update_guild_config(interaction.guild.id, staff_role_id=role_id)
+        config = config_manager.get_guild_config(interaction.guild.id)
+        embed = self.view.build_embed(config)
+        await interaction.response.edit_message(embed=embed, view=self.view)
+
+
 class FunSettingsView(ui.View):
-    """Impostazioni risposte divertenti e auto-ruolo."""
+    """Impostazioni risposte divertenti, auto-ruolo e ruolo staff."""
 
     def __init__(self, ctx, parent_view):
         super().__init__(timeout=300)
         self.ctx = ctx
         self.parent_view = parent_view
         self.add_item(AutoRoleSelect())
+        self.add_item(StaffRoleSelect())
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
         if interaction.user.id != self.ctx.author.id:
@@ -433,18 +454,21 @@ class FunSettingsView(ui.View):
     def build_embed(self, config):
         fun_status = "✅ Attivo" if config["fun_replies_enabled"] else "❌ Disattivato"
         auto_role = f"<@&{config['auto_role_id']}>" if config.get("auto_role_id") else "Nessuno"
+        staff_role = f"<@&{config['staff_role_id']}>" if config.get("staff_role_id") else "Solo Admin"
         chance = config.get("fun_replies_chance", 20)
 
-        embed = discord.Embed(title="🎭 Risposte Divertenti & Ruoli", color=0x9B59B6)
+        embed = discord.Embed(title="🎭 Risposte, Ruoli & Staff", color=0x9B59B6)
         embed.add_field(name="Risposte divertenti", value=fun_status, inline=True)
         embed.add_field(name="Probabilità saluti", value=f"{chance}%", inline=True)
         embed.add_field(name="Auto-ruolo", value=auto_role, inline=True)
+        embed.add_field(name="👑 Ruolo Staff", value=staff_role, inline=True)
         embed.add_field(
             name="ℹ️ Info",
             value=(
                 "**Risposte divertenti:** il bot reagisce alle parolacce con risposte a tema D&D "
                 "e saluta i nuovi messaggi con una probabilità configurabile.\n"
-                "**Auto-ruolo:** assegna automaticamente un ruolo a chi entra nel server."
+                "**Auto-ruolo:** assegna automaticamente un ruolo a chi entra nel server.\n"
+                "**Ruolo Staff:** chi ha questo ruolo può usare `!config` e `!roles` anche senza essere Admin."
             ),
             inline=False,
         )
@@ -536,6 +560,17 @@ class ConfirmResetView(ui.View):
 # COG PRINCIPALE
 # ═══════════════════════════════════════════════════════════
 
+def _is_staff(ctx: commands.Context) -> bool:
+    """Controlla se l'utente è admin o ha il ruolo staff configurato."""
+    if ctx.author.guild_permissions.administrator:
+        return True
+    config = config_manager.get_guild_config(ctx.guild.id)
+    staff_role_id = config.get("staff_role_id")
+    if staff_role_id:
+        return any(r.id == int(staff_role_id) for r in ctx.author.roles)
+    return False
+
+
 class Config(commands.Cog):
     """Pannello di configurazione interattivo del bot."""
 
@@ -543,10 +578,12 @@ class Config(commands.Cog):
         self.bot = bot
 
     @commands.command(aliases=["settings", "setup", "impostazioni", "pannello"])
-    @commands.has_permissions(administrator=True)
     async def config(self, ctx):
         """Apre il pannello di configurazione del bot.
-        Solo gli amministratori possono usare questo comando."""
+        Accessibile ad admin e staff."""
+        if not _is_staff(ctx):
+            await ctx.send("❌ Solo gli **amministratori** o lo **staff** possono accedere alla configurazione.")
+            return
         view = ConfigMainView(ctx)
         embed = view._build_main_embed()
         await ctx.send(embed=embed, view=view)
@@ -554,7 +591,7 @@ class Config(commands.Cog):
     @config.error
     async def config_error(self, ctx, error):
         if isinstance(error, commands.MissingPermissions):
-            await ctx.send("❌ Solo gli **amministratori** possono accedere alla configurazione.")
+            await ctx.send("❌ Solo gli **amministratori** o lo **staff** possono accedere alla configurazione.")
 
 
 async def setup(bot):

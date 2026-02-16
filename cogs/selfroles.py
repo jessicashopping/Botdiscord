@@ -2,11 +2,11 @@
 Self-Roles System — Grimory Bot
 
 Permette agli utenti di scegliere ruoli tramite embed interattivi:
-  🎨 Colori  — cambia il colore del tuo nome
-  ⚔️ Classi  — scegli la tua classe D&D
-  🔓 Sblocco — ottieni ruoli per accedere ad aree speciali
+  💎 Colori (Gemme) — cambia il colore del tuo nome
+  ⚔️ Classi D&D     — scegli la tua classe
+  🔓 Sblocco        — ottieni ruoli per accedere ad aree speciali
 
-Gli admin configurano tutto dal pannello !config → Self Roles.
+Gli admin/staff configurano tutto dal pannello !config → Self Roles.
 """
 
 import discord
@@ -15,28 +15,58 @@ from discord import ui
 from utils import config_manager
 
 # ═══════════════════════════════════════════════════════════
-# DATI PRESET
+# DATI PRESET — GEMME
 # ═══════════════════════════════════════════════════════════
 
 PRESET_COLORS = {
-    "Rosso":     "e74c3c",
-    "Blu":       "3498db",
-    "Verde":     "2ecc71",
-    "Oro":       "f1c40f",
-    "Viola":     "9b59b6",
-    "Arancione": "e67e22",
-    "Rosa":      "e91e63",
-    "Celeste":   "00bcd4",
-    "Turchese":  "1abc9c",
-    "Smeraldo":  "00c853",
-    "Bianco":    "ecf0f1",
-    "Grigio":    "95a5a6",
+    "Rubino":        "e74c3c",
+    "Zaffiro":       "3498db",
+    "Smeraldo":      "2ecc71",
+    "Topazio":       "f1c40f",
+    "Ametista":      "9b59b6",
+    "Ambra":         "e67e22",
+    "Quarzo Rosa":   "e91e63",
+    "Acquamarina":   "00bcd4",
+    "Turchese":      "1abc9c",
+    "Giada":         "00c853",
+    "Diamante":      "ecf0f1",
+    "Ossidiana":     "2c3e50",
+    "Opale":         "fd79a8",
+    "Lapislazzuli":  "0984e3",
 }
 
 COLOR_EMOJIS = {
-    "Rosso": "🔴", "Blu": "🔵", "Verde": "🟢", "Oro": "🟡",
-    "Viola": "🟣", "Arancione": "🟠", "Rosa": "💗", "Celeste": "💎",
-    "Turchese": "🌊", "Smeraldo": "💚", "Bianco": "⚪", "Grigio": "🩶",
+    "Rubino":       "♦️",
+    "Zaffiro":      "🔹",
+    "Smeraldo":     "💚",
+    "Topazio":      "💛",
+    "Ametista":     "🔮",
+    "Ambra":        "🧡",
+    "Quarzo Rosa":  "💗",
+    "Acquamarina":  "💎",
+    "Turchese":     "🌊",
+    "Giada":        "🍀",
+    "Diamante":     "💠",
+    "Ossidiana":    "🖤",
+    "Opale":        "🩷",
+    "Lapislazzuli": "💙",
+}
+
+COLOR_DESCRIPTIONS = {
+    "Rubino":       "Gemma di fuoco — rosso ardente",
+    "Zaffiro":      "Gemma del cielo — blu reale",
+    "Smeraldo":     "Gemma della foresta — verde profondo",
+    "Topazio":      "Gemma del sole — oro brillante",
+    "Ametista":     "Gemma dell'arcano — viola mistico",
+    "Ambra":        "Gemma della terra — arancione caldo",
+    "Quarzo Rosa":  "Gemma dell'amore — rosa delicato",
+    "Acquamarina":  "Gemma del mare — celeste cristallino",
+    "Turchese":     "Gemma del vento — verde acqua",
+    "Giada":        "Gemma dell'equilibrio — verde smeraldo",
+    "Diamante":     "Gemma della luce — bianco puro",
+    "Ossidiana":    "Gemma dell'ombra — nero profondo",
+    "Opale":        "Gemma dei sogni — rosa cangiante",
+    "Lapislazzuli": "Gemma della saggezza — blu intenso",
 }
 
 DND_CLASSES = [
@@ -49,6 +79,9 @@ CLASS_EMOJIS = {
     "Guerriero": "⚔️", "Ladro": "🗡️", "Mago": "🔮", "Monaco": "☯️",
     "Paladino": "🛡️", "Ranger": "🏹", "Stregone": "🌀", "Warlock": "👁️",
 }
+
+# Valore speciale per l'opzione "Rimuovi"
+REMOVE_VALUE = "remove_role"
 
 
 # ═══════════════════════════════════════════════════════════
@@ -66,20 +99,32 @@ class PersistentColorSelect(ui.Select):
     def __init__(self):
         super().__init__(
             custom_id="grimory:color_select",
-            placeholder="🎨 Scegli il tuo colore...",
+            placeholder="💎 Scegli la tua gemma...",
             min_values=1, max_values=1,
             options=[discord.SelectOption(label="caricamento", value="0")],
         )
 
     async def callback(self, interaction: discord.Interaction):
-        role_id = int(self.values[0])
+        value = self.values[0]
         guild = interaction.guild
         member = interaction.user
         config = config_manager.get_guild_config(guild.id)
 
-        # Rimuovi tutti i color roles esistenti
         all_color_ids = {int(v["role_id"]) for v in config.get("color_roles", {}).values()}
         roles_to_remove = [r for r in member.roles if r.id in all_color_ids]
+
+        # Opzione "Rimuovi" — rimuove e basta
+        if value == REMOVE_VALUE:
+            if roles_to_remove:
+                await member.remove_roles(*roles_to_remove)
+                await interaction.response.send_message("💎 Gemma rimossa! Torni ai colori base.", ephemeral=True)
+            else:
+                await interaction.response.send_message("💎 Non hai nessuna gemma equipaggiata.", ephemeral=True)
+            return
+
+        role_id = int(value)
+
+        # Rimuovi gemma attuale
         if roles_to_remove:
             await member.remove_roles(*roles_to_remove)
 
@@ -88,13 +133,13 @@ class PersistentColorSelect(ui.Select):
             await interaction.response.send_message("⚠️ Ruolo non trovato.", ephemeral=True)
             return
 
-        # Se aveva già questo colore → lo rimuove e basta
-        if role in roles_to_remove:
-            await interaction.response.send_message(f"🎨 Colore **{role.name}** rimosso!", ephemeral=True)
+        # Se aveva già questa gemma → l'ha rimossa sopra, non la rimette
+        if role in roles_to_remove and len(roles_to_remove) == 1 and roles_to_remove[0].id == role_id:
+            await interaction.response.send_message(f"💎 Gemma **{role.name}** rimossa!", ephemeral=True)
             return
 
         await member.add_roles(role)
-        await interaction.response.send_message(f"🎨 Colore impostato: **{role.name}**!", ephemeral=True)
+        await interaction.response.send_message(f"💎 Gemma equipaggiata: **{role.name}**!", ephemeral=True)
 
 
 class PersistentClassView(ui.View):
@@ -113,13 +158,25 @@ class PersistentClassSelect(ui.Select):
         )
 
     async def callback(self, interaction: discord.Interaction):
-        role_id = int(self.values[0])
+        value = self.values[0]
         guild = interaction.guild
         member = interaction.user
         config = config_manager.get_guild_config(guild.id)
 
         all_class_ids = {int(v["role_id"]) for v in config.get("class_roles", {}).values()}
         roles_to_remove = [r for r in member.roles if r.id in all_class_ids]
+
+        # Opzione "Rimuovi"
+        if value == REMOVE_VALUE:
+            if roles_to_remove:
+                await member.remove_roles(*roles_to_remove)
+                await interaction.response.send_message("⚔️ Classe rimossa! Sei tornato un avventuriero senza classe.", ephemeral=True)
+            else:
+                await interaction.response.send_message("⚔️ Non hai nessuna classe equipaggiata.", ephemeral=True)
+            return
+
+        role_id = int(value)
+
         if roles_to_remove:
             await member.remove_roles(*roles_to_remove)
 
@@ -128,7 +185,7 @@ class PersistentClassSelect(ui.Select):
             await interaction.response.send_message("⚠️ Ruolo non trovato.", ephemeral=True)
             return
 
-        if role in roles_to_remove:
+        if role in roles_to_remove and len(roles_to_remove) == 1 and roles_to_remove[0].id == role_id:
             await interaction.response.send_message(f"⚔️ Classe **{role.name}** rimossa!", ephemeral=True)
             return
 
@@ -168,6 +225,21 @@ class PersistentUnlockButton(ui.Button):
 
 
 # ═══════════════════════════════════════════════════════════
+# HELPER STAFF CHECK
+# ═══════════════════════════════════════════════════════════
+
+def _is_staff(ctx: commands.Context) -> bool:
+    """Controlla se l'utente è admin o ha il ruolo staff."""
+    if ctx.author.guild_permissions.administrator:
+        return True
+    config = config_manager.get_guild_config(ctx.guild.id)
+    staff_role_id = config.get("staff_role_id")
+    if staff_role_id:
+        return any(r.id == int(staff_role_id) for r in ctx.author.roles)
+    return False
+
+
+# ═══════════════════════════════════════════════════════════
 # VISTE CONFIG ADMIN — Pannello Self Roles
 # ═══════════════════════════════════════════════════════════
 
@@ -194,28 +266,25 @@ class SelfRolesConfigView(ui.View):
         n_classes = len(config.get("class_roles", {}))
         n_unlock = len(config.get("unlock_roles", {}))
 
-        # Colori attivi
         color_names = list(config.get("color_roles", {}).keys())
-        color_str = ", ".join(f"{COLOR_EMOJIS.get(c, '🎨')} {c}" for c in color_names[:8])
+        color_str = ", ".join(f"{COLOR_EMOJIS.get(c, '💎')} {c}" for c in color_names[:8])
         if len(color_names) > 8:
-            color_str += f" +{len(color_names) - 8} altri"
+            color_str += f" +{len(color_names) - 8} altre"
         if not color_str:
-            color_str = "Nessuno"
+            color_str = "Nessuna"
 
-        # Classi attive
         class_names = list(config.get("class_roles", {}).keys())
         class_str = ", ".join(f"{CLASS_EMOJIS.get(c, '⚔️')} {c}" for c in class_names[:8])
         if len(class_names) > 8:
-            class_str += f" +{len(class_names) - 8} altri"
+            class_str += f" +{len(class_names) - 8} altre"
         if not class_str:
             class_str = "Nessuna"
 
-        # Unlock
         unlock_names = list(config.get("unlock_roles", {}).keys())
         unlock_str = ", ".join(unlock_names[:6]) or "Nessuno"
 
         embed = discord.Embed(
-            title="🎨 Configurazione Self Roles",
+            title="💎 Configurazione Self Roles",
             description=(
                 "Configura i ruoli che gli utenti possono assegnarsi da soli.\n"
                 "Il bot creerà automaticamente i ruoli nel server."
@@ -223,14 +292,14 @@ class SelfRolesConfigView(ui.View):
             color=0xE91E63,
         )
         embed.add_field(name="📌 Canale", value=ch, inline=True)
-        embed.add_field(name="📊 Totale", value=f"{n_colors} colori · {n_classes} classi · {n_unlock} sblocco", inline=True)
-        embed.add_field(name="🎨 Colori attivi", value=color_str, inline=False)
+        embed.add_field(name="📊 Totale", value=f"{n_colors} gemme · {n_classes} classi · {n_unlock} sblocco", inline=True)
+        embed.add_field(name="💎 Gemme attive", value=color_str, inline=False)
         embed.add_field(name="⚔️ Classi attive", value=class_str, inline=False)
         embed.add_field(name="🔓 Ruoli sblocco", value=unlock_str, inline=False)
         embed.set_footer(text="Usa i bottoni sotto per modificare · Le modifiche sono salvate automaticamente")
         return embed
 
-    @ui.button(label="🎨 Colori", style=discord.ButtonStyle.primary, row=0)
+    @ui.button(label="💎 Gemme / Colori", style=discord.ButtonStyle.primary, row=0)
     async def manage_colors(self, interaction: discord.Interaction, button: ui.Button):
         view = ColorConfigView(self.ctx, self)
         embed = view.build_embed()
@@ -302,8 +371,8 @@ class SelfRolesChannelSelect(ui.ChannelSelect):
 
 
 class EmbedTextsModal(ui.Modal, title="✏️ Modifica Testi Embed"):
-    color_title = ui.TextInput(label="Titolo Embed Colori", max_length=100, row=0)
-    color_desc  = ui.TextInput(label="Descrizione Embed Colori", style=discord.TextStyle.paragraph, max_length=300, row=1)
+    color_title = ui.TextInput(label="Titolo Embed Gemme", max_length=100, row=0)
+    color_desc  = ui.TextInput(label="Descrizione Embed Gemme", style=discord.TextStyle.paragraph, max_length=300, row=1)
     class_title = ui.TextInput(label="Titolo Embed Classi", max_length=100, row=2)
     class_desc  = ui.TextInput(label="Descrizione Embed Classi", style=discord.TextStyle.paragraph, max_length=300, row=3)
 
@@ -336,11 +405,11 @@ class EmbedTextsModal(ui.Modal, title="✏️ Modifica Testi Embed"):
 
 
 # ═══════════════════════════════════════════════════════════
-# CONFIG COLORI
+# CONFIG GEMME / COLORI
 # ═══════════════════════════════════════════════════════════
 
 class ColorConfigView(ui.View):
-    """Gestione dei colori con selezione multipla."""
+    """Gestione delle gemme con selezione multipla."""
 
     def __init__(self, ctx, parent_view):
         super().__init__(timeout=300)
@@ -360,17 +429,16 @@ class ColorConfigView(ui.View):
 
         options = []
         for name, hex_code in PRESET_COLORS.items():
-            emoji = COLOR_EMOJIS.get(name, "🎨")
+            emoji = COLOR_EMOJIS.get(name, "💎")
+            desc = COLOR_DESCRIPTIONS.get(name, f"#{hex_code.upper()}")
             options.append(discord.SelectOption(
-                label=name,
-                value=name,
-                emoji=emoji,
-                description=f"#{hex_code.upper()}",
+                label=name, value=name, emoji=emoji,
+                description=desc,
                 default=(name in enabled),
             ))
 
         select = ui.Select(
-            placeholder="Seleziona i colori da attivare…",
+            placeholder="Seleziona le gemme da attivare…",
             options=options,
             min_values=0,
             max_values=len(options),
@@ -387,22 +455,21 @@ class ColorConfigView(ui.View):
 
         await interaction.response.defer()
 
-        # Aggiungi nuovi colori
         for name in selected:
             if name not in current:
                 hex_code = PRESET_COLORS.get(name, "95a5a6")
                 color = discord.Color(int(hex_code, 16))
+                emoji = COLOR_EMOJIS.get(name, "💎")
                 try:
                     role = await guild.create_role(
-                        name=f"🎨 {name}",
+                        name=f"{emoji} {name}",
                         color=color,
-                        reason=f"Grimory Bot — Self Role colore: {name}",
+                        reason=f"Grimory Bot — Gemma: {name}",
                     )
                     current[name] = {"role_id": role.id, "hex": hex_code}
                 except discord.Forbidden:
                     pass
 
-        # Rimuovi colori deselezionati
         to_remove = [n for n in current if n not in selected and n in PRESET_COLORS]
         for name in to_remove:
             role_id = current[name].get("role_id")
@@ -410,14 +477,13 @@ class ColorConfigView(ui.View):
                 role = guild.get_role(int(role_id))
                 if role:
                     try:
-                        await role.delete(reason="Grimory Bot — Colore rimosso dalla config")
+                        await role.delete(reason="Grimory Bot — Gemma rimossa dalla config")
                     except discord.Forbidden:
                         pass
             del current[name]
 
         config_manager.update_guild_config(guild.id, color_roles=current)
 
-        # Ricostruisci la view con lo stato aggiornato
         new_view = ColorConfigView(self.ctx, self.parent_view)
         embed = new_view.build_embed()
         await interaction.message.edit(embed=embed, view=new_view)
@@ -428,27 +494,28 @@ class ColorConfigView(ui.View):
 
         lines = []
         for name in PRESET_COLORS:
-            emoji = COLOR_EMOJIS.get(name, "🎨")
+            emoji = COLOR_EMOJIS.get(name, "💎")
             status = "✅" if name in enabled else "❌"
-            lines.append(f"{emoji} {name} {status}")
+            desc = COLOR_DESCRIPTIONS.get(name, "")
+            lines.append(f"{emoji} **{name}** — *{desc}* {status}")
 
-        # Colori custom
         custom = [n for n in enabled if n not in PRESET_COLORS]
         if custom:
-            lines.append("\n**Colori personalizzati:**")
+            lines.append("\n**Gemme personalizzate:**")
             for name in custom:
-                lines.append(f"🎨 {name} ✅")
+                hex_code = enabled[name].get("hex", "000000")
+                lines.append(f"💎 **{name}** — #{hex_code.upper()} ✅")
 
         embed = discord.Embed(
-            title="🎨 Gestione Colori",
-            description="Seleziona i colori nel menu sotto. Il bot creerà/rimuoverà i ruoli automaticamente.",
+            title="💎 Gestione Gemme",
+            description="Seleziona le gemme nel menu sotto. Il bot creerà/rimuoverà i ruoli automaticamente.",
             color=0xE91E63,
         )
-        embed.add_field(name="Stato colori", value="\n".join(lines), inline=False)
+        embed.add_field(name="Gemme disponibili", value="\n".join(lines), inline=False)
         embed.set_footer(text="I ruoli vengono creati/eliminati automaticamente nel server")
         return embed
 
-    @ui.button(label="➕ Colore Personalizzato", style=discord.ButtonStyle.primary, row=1)
+    @ui.button(label="➕ Gemma Personalizzata", style=discord.ButtonStyle.primary, row=1)
     async def add_custom(self, interaction: discord.Interaction, button: ui.Button):
         modal = CustomColorModal(self.ctx, self)
         await interaction.response.send_modal(modal)
@@ -459,9 +526,10 @@ class ColorConfigView(ui.View):
         await interaction.response.edit_message(embed=embed, view=self.parent_view)
 
 
-class CustomColorModal(ui.Modal, title="➕ Aggiungi Colore Personalizzato"):
-    name_input = ui.TextInput(label="Nome del colore", placeholder="es. Indaco", max_length=30, row=0)
+class CustomColorModal(ui.Modal, title="➕ Aggiungi Gemma Personalizzata"):
+    name_input = ui.TextInput(label="Nome della gemma", placeholder="es. Granato, Perla, Corallo", max_length=30, row=0)
     hex_input = ui.TextInput(label="Codice HEX (senza #)", placeholder="es. 4B0082", max_length=6, min_length=6, row=1)
+    emoji_input = ui.TextInput(label="Emoji (opzionale)", placeholder="es. 💜 🪨 ✨", required=False, max_length=5, row=2)
 
     def __init__(self, ctx, parent_view):
         super().__init__()
@@ -471,6 +539,7 @@ class CustomColorModal(ui.Modal, title="➕ Aggiungi Colore Personalizzato"):
     async def on_submit(self, interaction: discord.Interaction):
         name = self.name_input.value.strip()
         hex_code = self.hex_input.value.strip().replace("#", "")
+        emoji = self.emoji_input.value.strip() or "💎"
 
         try:
             color_int = int(hex_code, 16)
@@ -483,18 +552,20 @@ class CustomColorModal(ui.Modal, title="➕ Aggiungi Colore Personalizzato"):
         current = config.get("color_roles", {})
 
         if name in current:
-            await interaction.response.send_message(f"⚠️ Il colore '{name}' esiste già!", ephemeral=True)
+            await interaction.response.send_message(f"⚠️ La gemma '{name}' esiste già!", ephemeral=True)
             return
 
         await interaction.response.defer()
 
         try:
             role = await guild.create_role(
-                name=f"🎨 {name}",
+                name=f"{emoji} {name}",
                 color=discord.Color(color_int),
-                reason=f"Grimory Bot — Colore personalizzato: {name}",
+                reason=f"Grimory Bot — Gemma personalizzata: {name}",
             )
-            current[name] = {"role_id": role.id, "hex": hex_code}
+            current[name] = {"role_id": role.id, "hex": hex_code, "emoji": emoji}
+            # Salva anche l'emoji custom
+            COLOR_EMOJIS[name] = emoji
             config_manager.update_guild_config(guild.id, color_roles=current)
         except discord.Forbidden:
             await interaction.followup.send("⚠️ Non ho i permessi per creare ruoli!", ephemeral=True)
@@ -532,9 +603,7 @@ class ClassConfigView(ui.View):
         for name in DND_CLASSES:
             emoji = CLASS_EMOJIS.get(name, "⚔️")
             options.append(discord.SelectOption(
-                label=name,
-                value=name,
-                emoji=emoji,
+                label=name, value=name, emoji=emoji,
                 default=(name in enabled),
             ))
 
@@ -562,7 +631,7 @@ class ClassConfigView(ui.View):
                 try:
                     role = await guild.create_role(
                         name=f"{emoji} {name}",
-                        reason=f"Grimory Bot — Self Role classe: {name}",
+                        reason=f"Grimory Bot — Classe: {name}",
                     )
                     current[name] = {"role_id": role.id}
                 except discord.Forbidden:
@@ -665,7 +734,6 @@ class UnlockConfigView(ui.View):
         if not unlock:
             await interaction.response.send_message("⚠️ Aggiungi prima un ruolo!", ephemeral=True)
             return
-        # Mostra dropdown per scegliere quale modificare
         view = UnlockEditSelectView(self.ctx, self, unlock)
         await interaction.response.edit_message(view=view)
 
@@ -686,7 +754,6 @@ class UnlockConfigView(ui.View):
 
 
 class UnlockRoleAddSelect(ui.RoleSelect):
-    """Dropdown per aggiungere un ruolo di sblocco."""
     def __init__(self):
         super().__init__(
             placeholder="➕ Seleziona un ruolo da aggiungere…",
@@ -698,7 +765,6 @@ class UnlockRoleAddSelect(ui.RoleSelect):
         config = config_manager.get_guild_config(interaction.guild.id)
         unlock = config.get("unlock_roles", {})
 
-        # Controlla se esiste già
         for data in unlock.values():
             if int(data["role_id"]) == role.id:
                 await interaction.response.send_message(f"⚠️ Il ruolo {role.mention} è già configurato!", ephemeral=True)
@@ -708,7 +774,6 @@ class UnlockRoleAddSelect(ui.RoleSelect):
             await interaction.response.send_message("⚠️ Massimo 20 ruoli di sblocco!", ephemeral=True)
             return
 
-        # Apri modal per descrizione
         modal = UnlockDescriptionModal(interaction.guild.id, role, self.view)
         await interaction.response.send_modal(modal)
 
@@ -747,7 +812,6 @@ class UnlockDescriptionModal(ui.Modal, title="🔓 Configura Ruolo Sblocco"):
 
 
 class UnlockRemoveView(ui.View):
-    """Vista per rimuovere un ruolo di sblocco."""
     def __init__(self, ctx, parent_view, unlock_roles):
         super().__init__(timeout=120)
         self.ctx = ctx
@@ -777,7 +841,6 @@ class UnlockRemoveView(ui.View):
 
 
 class UnlockEditSelectView(ui.View):
-    """Vista per scegliere quale ruolo sblocco modificare."""
     def __init__(self, ctx, parent_view, unlock_roles):
         super().__init__(timeout=120)
         self.ctx = ctx
@@ -840,11 +903,9 @@ class SelfRoles(commands.Cog):
 
     async def cog_load(self):
         """Registra le view persistenti al caricamento del cog."""
-        # View template persistenti — il custom_id fa il match con i messaggi inviati
         self.bot.add_view(PersistentColorView())
         self.bot.add_view(PersistentClassView())
 
-        # Registra view persistenti per i bottoni unlock di tutti i server
         all_configs = config_manager.load_all()
         for guild_id, config in all_configs.items():
             unlock = config.get("unlock_roles", {})
@@ -867,15 +928,24 @@ class SelfRoles(commands.Cog):
         descs = config.get("selfroles_descriptions", {})
         message_ids = config.get("selfroles_message_ids", {})
 
-        # ── EMBED COLORI ─────────────────────────────────
+        # ── EMBED GEMME ──────────────────────────────────
         color_roles = config.get("color_roles", {})
         if color_roles:
-            options = []
+            # Opzione "Rimuovi" in cima
+            options = [
+                discord.SelectOption(
+                    label="❌ Rimuovi Gemma",
+                    value=REMOVE_VALUE,
+                    emoji="❌",
+                    description="Rimuovi la gemma equipaggiata",
+                ),
+            ]
             for name, data in color_roles.items():
-                emoji = COLOR_EMOJIS.get(name, "🎨")
+                emoji = data.get("emoji", COLOR_EMOJIS.get(name, "💎"))
+                desc = COLOR_DESCRIPTIONS.get(name, f"Colore: #{data.get('hex', '000000').upper()}")
                 options.append(discord.SelectOption(
                     label=name, value=str(data["role_id"]),
-                    emoji=emoji, description=f"Colore: #{data.get('hex', '000000').upper()}",
+                    emoji=emoji, description=desc[:100],
                 ))
 
             view = PersistentColorView()
@@ -885,13 +955,16 @@ class SelfRoles(commands.Cog):
             view.add_item(select)
 
             embed = discord.Embed(
-                title=titles.get("color", "🎨 Scegli il tuo Colore"),
-                description=descs.get("color", "Seleziona un colore per il tuo nome!"),
+                title=titles.get("color", "💎 Scegli la tua Gemma"),
+                description=descs.get("color", "Seleziona una gemma per cambiare il colore del tuo nome!\nOgni gemma rappresenta un potere diverso."),
                 color=0xE91E63,
             )
-            color_preview = "  ".join(f"{COLOR_EMOJIS.get(n, '🎨')} {n}" for n in color_roles)
-            embed.add_field(name="Colori disponibili", value=color_preview, inline=False)
-            embed.set_footer(text="Seleziona di nuovo lo stesso colore per rimuoverlo")
+            color_preview = "\n".join(
+                f"{data.get('emoji', COLOR_EMOJIS.get(n, '💎'))} **{n}** — *{COLOR_DESCRIPTIONS.get(n, '')}*"
+                for n, data in color_roles.items()
+            )
+            embed.add_field(name="Gemme disponibili", value=color_preview, inline=False)
+            embed.set_footer(text="💎 Seleziona una gemma · ❌ Rimuovi per togliere il colore")
 
             msg_id = message_ids.get("color")
             msg = await self._send_or_edit(channel, msg_id, embed=embed, view=view)
@@ -900,7 +973,14 @@ class SelfRoles(commands.Cog):
         # ── EMBED CLASSI ─────────────────────────────────
         class_roles = config.get("class_roles", {})
         if class_roles:
-            options = []
+            options = [
+                discord.SelectOption(
+                    label="❌ Rimuovi Classe",
+                    value=REMOVE_VALUE,
+                    emoji="❌",
+                    description="Rimuovi la classe equipaggiata",
+                ),
+            ]
             for name, data in class_roles.items():
                 emoji = CLASS_EMOJIS.get(name, "⚔️")
                 options.append(discord.SelectOption(
@@ -915,12 +995,12 @@ class SelfRoles(commands.Cog):
 
             embed = discord.Embed(
                 title=titles.get("class", "⚔️ Scegli la tua Classe"),
-                description=descs.get("class", "Scegli la classe del tuo personaggio!"),
+                description=descs.get("class", "Scegli la classe del tuo personaggio per mostrare a tutti chi sei!"),
                 color=0xE67E22,
             )
             class_preview = "  ".join(f"{CLASS_EMOJIS.get(n, '⚔️')} {n}" for n in class_roles)
             embed.add_field(name="Classi disponibili", value=class_preview, inline=False)
-            embed.set_footer(text="Seleziona di nuovo la stessa classe per rimuoverla")
+            embed.set_footer(text="⚔️ Seleziona una classe · ❌ Rimuovi per togliere la classe")
 
             msg_id = message_ids.get("class")
             msg = await self._send_or_edit(channel, msg_id, embed=embed, view=view)
@@ -937,7 +1017,7 @@ class SelfRoles(commands.Cog):
 
             embed = discord.Embed(
                 title=titles.get("unlock", "🔓 Ruoli Speciali"),
-                description=descs.get("unlock", "Clicca per ottenere o rimuovere un ruolo!"),
+                description=descs.get("unlock", "Clicca i bottoni per ottenere o rimuovere ruoli speciali!"),
                 color=0x9B59B6,
             )
             for name, data in unlock_roles.items():
@@ -948,17 +1028,15 @@ class SelfRoles(commands.Cog):
                     value=desc or "Clicca il bottone per ottenere questo ruolo",
                     inline=True,
                 )
-            embed.set_footer(text="Clicca di nuovo per rimuovere il ruolo")
+            embed.set_footer(text="🔓 Clicca per ottenere · Clicca di nuovo per rimuovere")
 
             msg_id = message_ids.get("unlock")
             msg = await self._send_or_edit(channel, msg_id, embed=embed, view=view)
             message_ids["unlock"] = msg.id
 
-        # Salva gli ID dei messaggi
         config_manager.update_guild_config(guild.id, selfroles_message_ids=message_ids)
 
     async def _send_or_edit(self, channel, message_id, **kwargs):
-        """Modifica il messaggio esistente o ne invia uno nuovo."""
         if message_id:
             try:
                 msg = await channel.fetch_message(int(message_id))
@@ -969,17 +1047,14 @@ class SelfRoles(commands.Cog):
         return await channel.send(**kwargs)
 
     @commands.command(aliases=["ruoli"])
-    @commands.has_permissions(administrator=True)
     async def roles(self, ctx):
-        """Apre il pannello di configurazione dei self-roles (admin)."""
+        """Apre il pannello di configurazione dei self-roles (admin/staff)."""
+        if not _is_staff(ctx):
+            await ctx.send("❌ Solo gli **amministratori** o lo **staff** possono configurare i ruoli.")
+            return
         view = SelfRolesConfigView(ctx)
         embed = view.build_embed()
         await ctx.send(embed=embed, view=view)
-
-    @roles.error
-    async def roles_error(self, ctx, error):
-        if isinstance(error, commands.MissingPermissions):
-            await ctx.send("❌ Solo gli **amministratori** possono configurare i ruoli.")
 
 
 async def setup(bot):

@@ -25,6 +25,8 @@ DEFAULT_CONFIG = {
     "goodbye_message": "{member} ha lasciato la taverna. Che i dadi ti siano favorevoli! 🫡",
     # ── Auto-ruolo ───────────────────────────────────────
     "auto_role_id": None,
+    # ── Staff ────────────────────────────────────────────
+    "staff_role_id": None,  # ruolo che può usare !config oltre agli admin
     # ── Risposte divertenti ──────────────────────────────
     "fun_replies_enabled": True,
     "fun_replies_chance": 20,
