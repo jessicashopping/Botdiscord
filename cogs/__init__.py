@@ -1,1 +1,1 @@
-print("Compendium caricato correttamente!")
+# Grimory Bot — Cogs package
