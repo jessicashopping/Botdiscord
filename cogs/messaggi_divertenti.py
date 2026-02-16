@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import random
 import re
+from utils import config_manager
 
 
 # Pattern compilati per matching più accurato (word boundaries)
@@ -88,6 +89,15 @@ class MessaggiDivertenti(commands.Cog):
         if message.author.bot:
             return
 
+        # Controlla se le risposte divertenti sono attive per questo server
+        if message.guild:
+            config = config_manager.get_guild_config(message.guild.id)
+            if not config.get("fun_replies_enabled", True):
+                return
+            chance = config.get("fun_replies_chance", 20)
+        else:
+            chance = 20
+
         testo = message.content
 
         # Parolacce → risposta D&D
@@ -95,8 +105,8 @@ class MessaggiDivertenti(commands.Cog):
             await message.channel.send(random.choice(RISPOSTE))
             return
 
-        # Saluti → risposta amichevole (20% di probabilità per non spammare)
-        if SALUTI_PATTERN.search(testo) and random.random() < 0.2:
+        # Saluti → risposta amichevole (probabilità configurabile)
+        if SALUTI_PATTERN.search(testo) and random.randint(1, 100) <= chance:
             await message.channel.send(random.choice(SALUTI_RISPOSTE))
 
 
