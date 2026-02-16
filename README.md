@@ -70,6 +70,20 @@ Il pannello ha bottoni, menu a tendina e modal per configurare:
 - **Auto-ruolo**: assegna automaticamente un ruolo ai nuovi membri
 - **Reset**: ripristina tutto ai valori predefiniti
 
+### 🎨 Self Roles (`cogs/selfroles.py`) — NUOVO
+| Comando | Descrizione |
+|---------|-------------|
+| `!roles` | Apre il pannello self-roles (anche da `!config` → Self Roles) |
+
+Sistema completo di **self-roles** configurabile interamente da Discord:
+- **🎨 Colori** — 12 colori preset + colori personalizzati con codice HEX. Il bot crea i ruoli automaticamente.
+- **⚔️ Classi D&D** — tutte le 12 classi con emoji. Selezione singola (una classe alla volta).
+- **🔓 Ruoli Sblocco** — collega ruoli esistenti del server con descrizione ed emoji personalizzabili.
+- **✏️ Testi Embed** — personalizza titoli e descrizioni degli embed di selezione.
+- **📨 Invia / Aggiorna** — invia i 3 embed nel canale scelto. Li aggiorna se già inviati.
+
+Gli utenti interagiscono con **dropdown** (colori e classi) e **bottoni** (sblocco). Le view sono **persistenti** e sopravvivono al riavvio del bot.
+
 > ⚠️ **Importante**: su Discord vai in Impostazioni Server → App → Bot → attiva l'intent **"Server Members"** per il sistema di benvenuto.
 
 ## Hosting

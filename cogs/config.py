@@ -34,6 +34,12 @@ class ConfigMainView(ui.View):
         goodbye_ch = f"<#{config['goodbye_channel_id']}>" if config["goodbye_channel_id"] else "Non impostato"
         auto_role = f"<@&{config['auto_role_id']}>" if config.get("auto_role_id") else "Nessuno"
 
+        # Self roles stats
+        n_colors = len(config.get("color_roles", {}))
+        n_classes = len(config.get("class_roles", {}))
+        n_unlock = len(config.get("unlock_roles", {}))
+        sr_ch = f"<#{config['selfroles_channel_id']}>" if config.get("selfroles_channel_id") else "Non impostato"
+
         embed = discord.Embed(
             title="⚙️ Pannello di Configurazione — Grimory Bot",
             description="Usa i bottoni qui sotto per configurare il bot.\nSolo gli **amministratori** possono modificare le impostazioni.",
@@ -64,6 +70,14 @@ class ConfigMainView(ui.View):
             ),
             inline=True,
         )
+        embed.add_field(
+            name="🎨 Self Roles",
+            value=(
+                f"**Canale:** {sr_ch}\n"
+                f"**Colori:** {n_colors} · **Classi:** {n_classes} · **Sblocco:** {n_unlock}"
+            ),
+            inline=False,
+        )
         embed.set_footer(text="Le impostazioni vengono salvate automaticamente.")
         return embed
 
@@ -88,12 +102,26 @@ class ConfigMainView(ui.View):
         embed = view.build_embed(config)
         await interaction.response.edit_message(embed=embed, view=view)
 
-    @ui.button(label="📋 Mostra Configurazione", style=discord.ButtonStyle.secondary, row=1)
+    @ui.button(label="🎨 Self Roles", style=discord.ButtonStyle.primary, row=1)
+    async def selfroles_settings(self, interaction: discord.Interaction, button: ui.Button):
+        cog = self.ctx.bot.get_cog("SelfRoles")
+        if cog is None:
+            await interaction.response.send_message(
+                "⚠️ Il modulo Self Roles non è caricato.\n"
+                "Assicurati che `cogs/selfroles.py` sia presente nel progetto.",
+                ephemeral=True,
+            )
+            return
+        view = cog.get_config_view(self.ctx, self)
+        embed = view.build_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @ui.button(label="📋 Riepilogo", style=discord.ButtonStyle.secondary, row=2)
     async def show_config(self, interaction: discord.Interaction, button: ui.Button):
         embed = self._build_main_embed()
         await interaction.response.edit_message(embed=embed, view=self)
 
-    @ui.button(label="🔄 Reset", style=discord.ButtonStyle.danger, row=1)
+    @ui.button(label="🔄 Reset", style=discord.ButtonStyle.danger, row=2)
     async def reset_config(self, interaction: discord.Interaction, button: ui.Button):
         view = ConfirmResetView(self.ctx, self)
         embed = discord.Embed(

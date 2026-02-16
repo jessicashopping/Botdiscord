@@ -4,13 +4,12 @@ Salva e carica le impostazioni in un file JSON.
 """
 
 import json
-import os
 from pathlib import Path
 
 CONFIG_PATH = Path("data/server_configs.json")
 
-# Configurazione predefinita per ogni server
 DEFAULT_CONFIG = {
+    # ── Benvenuto ────────────────────────────────────────
     "welcome_enabled": False,
     "welcome_channel_id": None,
     "welcome_message": (
@@ -19,25 +18,42 @@ DEFAULT_CONFIG = {
         "Usa `!help` per scoprire tutti i comandi."
     ),
     "welcome_embed": True,
-    "welcome_color": "8B4513",  # marrone medievale
+    "welcome_color": "8B4513",
+    # ── Addio ────────────────────────────────────────────
     "goodbye_enabled": False,
     "goodbye_channel_id": None,
-    "goodbye_message": "{member} ha lasciato la taverna. Che i dadi ti siano favorevoli, avventuriero! 🫡",
+    "goodbye_message": "{member} ha lasciato la taverna. Che i dadi ti siano favorevoli! 🫡",
+    # ── Auto-ruolo ───────────────────────────────────────
     "auto_role_id": None,
+    # ── Risposte divertenti ──────────────────────────────
     "fun_replies_enabled": True,
-    "fun_replies_chance": 20,  # percentuale per i saluti
+    "fun_replies_chance": 20,
+    # ── Self Roles ───────────────────────────────────────
+    "selfroles_channel_id": None,
+    "selfroles_message_ids": {},          # {"color": id, "class": id, "unlock": id}
+    "color_roles": {},                     # {"Rosso": {"role_id": 123, "hex": "e74c3c"}, ...}
+    "class_roles": {},                     # {"Guerriero": {"role_id": 456}, ...}
+    "unlock_roles": {},                    # {"NomeRuolo": {"role_id": 789, "description": "...", "emoji": "⚔️"}, ...}
+    "selfroles_titles": {
+        "color": "🎨 Scegli il tuo Colore",
+        "class": "⚔️ Scegli la tua Classe",
+        "unlock": "🔓 Ruoli Speciali",
+    },
+    "selfroles_descriptions": {
+        "color": "Seleziona un colore dal menu per cambiare il colore del tuo nome!",
+        "class": "Scegli la classe del tuo personaggio per mostrare a tutti chi sei!",
+        "unlock": "Clicca i bottoni per ottenere i ruoli e sbloccare aree del server!",
+    },
 }
 
 
 def _ensure_file():
-    """Crea il file se non esiste."""
     CONFIG_PATH.parent.mkdir(parents=True, exist_ok=True)
     if not CONFIG_PATH.exists():
         CONFIG_PATH.write_text("{}", encoding="utf-8")
 
 
 def load_all() -> dict:
-    """Carica tutte le configurazioni."""
     _ensure_file()
     try:
         with open(CONFIG_PATH, "r", encoding="utf-8") as f:
@@ -47,49 +63,62 @@ def load_all() -> dict:
 
 
 def save_all(data: dict):
-    """Salva tutte le configurazioni."""
     _ensure_file()
     with open(CONFIG_PATH, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
 
 def get_guild_config(guild_id: int) -> dict:
-    """Restituisce la configurazione di un server (con valori predefiniti)."""
     all_configs = load_all()
     guild_key = str(guild_id)
 
     if guild_key not in all_configs:
-        all_configs[guild_key] = DEFAULT_CONFIG.copy()
+        all_configs[guild_key] = _deep_copy_default()
         save_all(all_configs)
 
-    # Assicura che tutte le chiavi predefinite esistano
     config = all_configs[guild_key]
+    # Assicura che tutte le chiavi predefinite esistano
     for key, value in DEFAULT_CONFIG.items():
         if key not in config:
-            config[key] = value
+            config[key] = _deep_copy_value(value)
+    # Assicura sotto-chiavi dizionari
+    for dict_key in ("selfroles_titles", "selfroles_descriptions", "selfroles_message_ids"):
+        if isinstance(DEFAULT_CONFIG[dict_key], dict):
+            for sub_key, sub_val in DEFAULT_CONFIG[dict_key].items():
+                if sub_key not in config[dict_key]:
+                    config[dict_key][sub_key] = sub_val
 
     return config
 
 
 def update_guild_config(guild_id: int, **kwargs):
-    """Aggiorna una o più impostazioni per un server."""
     all_configs = load_all()
     guild_key = str(guild_id)
 
     if guild_key not in all_configs:
-        all_configs[guild_key] = DEFAULT_CONFIG.copy()
+        all_configs[guild_key] = _deep_copy_default()
 
     for key, value in kwargs.items():
-        if key in DEFAULT_CONFIG:
-            all_configs[guild_key][key] = value
+        all_configs[guild_key][key] = value
 
     save_all(all_configs)
     return all_configs[guild_key]
 
 
 def reset_guild_config(guild_id: int) -> dict:
-    """Ripristina la configurazione predefinita di un server."""
     all_configs = load_all()
-    all_configs[str(guild_id)] = DEFAULT_CONFIG.copy()
+    all_configs[str(guild_id)] = _deep_copy_default()
     save_all(all_configs)
     return all_configs[str(guild_id)]
+
+
+def _deep_copy_default() -> dict:
+    return _deep_copy_value(DEFAULT_CONFIG)
+
+
+def _deep_copy_value(value):
+    if isinstance(value, dict):
+        return {k: _deep_copy_value(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_deep_copy_value(v) for v in value]
+    return value

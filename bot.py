@@ -87,6 +87,7 @@ BASE_EXTENSIONS = [
 EXTRA_EXTENSIONS = [
     "cogs.welcome",
     "cogs.config",
+    "cogs.selfroles",
 ]
 
 
