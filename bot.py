@@ -88,6 +88,7 @@ EXTRA_EXTENSIONS = [
     "cogs.welcome",
     "cogs.config",
     "cogs.selfroles",
+    "cogs.lockdown",
 ]
 
 

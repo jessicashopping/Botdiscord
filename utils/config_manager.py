@@ -32,20 +32,22 @@ DEFAULT_CONFIG = {
     "fun_replies_chance": 20,
     # ── Self Roles ───────────────────────────────────────
     "selfroles_channel_id": None,
-    "selfroles_message_ids": {},          # {"color": id, "class": id, "unlock": id}
-    "color_roles": {},                     # {"Rosso": {"role_id": 123, "hex": "e74c3c"}, ...}
-    "class_roles": {},                     # {"Guerriero": {"role_id": 456}, ...}
-    "unlock_roles": {},                    # {"NomeRuolo": {"role_id": 789, "description": "...", "emoji": "⚔️"}, ...}
+    "selfroles_message_ids": {},
+    "color_roles": {},
+    "class_roles": {},
+    "unlock_roles": {},
     "selfroles_titles": {
-        "color": "🎨 Scegli il tuo Colore",
+        "color": "💎 Scegli la tua Gemma",
         "class": "⚔️ Scegli la tua Classe",
         "unlock": "🔓 Ruoli Speciali",
     },
     "selfroles_descriptions": {
-        "color": "Seleziona un colore dal menu per cambiare il colore del tuo nome!",
+        "color": "Seleziona una gemma per cambiare il colore del tuo nome!",
         "class": "Scegli la classe del tuo personaggio per mostrare a tutti chi sei!",
-        "unlock": "Clicca i bottoni per ottenere i ruoli e sbloccare aree del server!",
+        "unlock": "Clicca per ottenere o rimuovere un ruolo!",
     },
+    # ── Canali protetti (solo bot) ───────────────────────
+    "locked_channels": [],  # lista di channel_id dove solo i bot possono scrivere
 }
 
 

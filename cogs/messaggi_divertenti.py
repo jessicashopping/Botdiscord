@@ -89,10 +89,13 @@ class MessaggiDivertenti(commands.Cog):
         if message.author.bot:
             return
 
-        # Controlla se le risposte divertenti sono attive per questo server
+        # Non rispondere nei canali protetti (verranno eliminati dal lockdown)
         if message.guild:
             config = config_manager.get_guild_config(message.guild.id)
             if not config.get("fun_replies_enabled", True):
+                return
+            locked = config.get("locked_channels", [])
+            if message.channel.id in locked:
                 return
             chance = config.get("fun_replies_chance", 20)
         else:

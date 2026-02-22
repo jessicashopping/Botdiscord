@@ -84,6 +84,19 @@ Sistema completo di **self-roles** configurabile interamente da Discord:
 
 Gli utenti interagiscono con **dropdown** (colori e classi) e **bottoni** (sblocco). Le view sono **persistenti** e sopravvivono al riavvio del bot.
 
+### 🔒 Canali Protetti (`cogs/lockdown.py`) — NUOVO
+Configurabile da `!config` → 🔒 Canali Protetti.
+
+Qualsiasi messaggio inviato da un **non-bot** in un canale protetto viene **eliminato istantaneamente**.
+Solo i bot possono scrivere in questi canali. Funziona anche contro l'owner del server.
+
+Perfetto per: canali regole, canali self-roles, canali annunci.
+- **Aggiungi canale**: menu a tendina nel pannello
+- **Rimuovi canale**: bottone 🔓 Sblocca
+- **Shortcut**: bottone "🔒 Blocca Tutti i Self-Roles" protegge automaticamente il canale self-roles
+
+> ⚠️ Il bot necessita del permesso **"Gestisci Messaggi"** per eliminare i messaggi.
+
 > ⚠️ **Importante**: su Discord vai in Impostazioni Server → App → Bot → attiva l'intent **"Server Members"** per il sistema di benvenuto.
 
 ## Hosting

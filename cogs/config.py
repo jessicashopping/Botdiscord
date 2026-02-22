@@ -79,8 +79,16 @@ class ConfigMainView(ui.View):
                 f"**Canale:** {sr_ch}\n"
                 f"**Colori:** {n_colors} · **Classi:** {n_classes} · **Sblocco:** {n_unlock}"
             ),
-            inline=False,
+            inline=True,
         )
+
+        n_locked = len(config.get("locked_channels", []))
+        embed.add_field(
+            name="🔒 Canali Protetti",
+            value=f"**{n_locked}** canale{'i' if n_locked != 1 else ''} protett{'i' if n_locked != 1 else 'o'}",
+            inline=True,
+        )
+
         embed.set_footer(text="Le impostazioni vengono salvate automaticamente.")
         return embed
 
@@ -112,6 +120,20 @@ class ConfigMainView(ui.View):
             await interaction.response.send_message(
                 "⚠️ Il modulo Self Roles non è caricato.\n"
                 "Assicurati che `cogs/selfroles.py` sia presente nel progetto.",
+                ephemeral=True,
+            )
+            return
+        view = cog.get_config_view(self.ctx, self)
+        embed = view.build_embed()
+        await interaction.response.edit_message(embed=embed, view=view)
+
+    @ui.button(label="🔒 Canali Protetti", style=discord.ButtonStyle.primary, row=1)
+    async def lockdown_settings(self, interaction: discord.Interaction, button: ui.Button):
+        cog = self.ctx.bot.get_cog("Lockdown")
+        if cog is None:
+            await interaction.response.send_message(
+                "⚠️ Il modulo Lockdown non è caricato.\n"
+                "Assicurati che `cogs/lockdown.py` sia presente nel progetto.",
                 ephemeral=True,
             )
             return
